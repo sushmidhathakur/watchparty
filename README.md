@@ -114,14 +114,14 @@ cp server/.env.example server/.env
 # Client
 cp client/.env.example client/.env
 # Edit client/.env:
-#   VITE_API_URL=http://localhost:5000
-#   VITE_SOCKET_URL=http://localhost:5000
+#   VITE_API_URL=https://watchparty-vul6.onrender.com](https://watchparty-vul6.onrender.com
+#   VITE_SOCKET_URL=https://watchparty-vul6.onrender.com](https://watchparty-vul6.onrender.com
 ```
 
 ### 3. Run development servers
 ```bash
 npm run dev
-# → Backend: http://localhost:5000
+# → Backend: https://watchparty-vul6.onrender.com](https://watchparty-vul6.onrender.com
 # → Frontend: http://localhost:5173
 ```
 

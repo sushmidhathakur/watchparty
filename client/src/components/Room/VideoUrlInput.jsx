@@ -31,7 +31,7 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
   const [url, setUrl] = useState(currentUrl || '');
   const [error, setError] = useState('');
 
-  // 🔥 ఇక్కడే నీ పాత handleSubmit ప్లేస్ లో ఈ కొత్త API ఎక్స్‌ట్రాక్టర్ లాజిక్ సెట్ చేసాను మావా!
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     const trimmed = url.trim();
@@ -40,17 +40,16 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
       return; 
     }
 
-    // 1. ఒకవేళ అది డైరెక్ట్ యూట్యూబ్ లింక్ లేదా డైరెక్ట్ .mp4 లింక్ అయితే నార్మల్ గా పంపేయ్
     if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
       setError('');
       onChangeVideo(trimmed);
       return;
     }
 
-    // 2. ఒకవేళ అది వేరే వెబ్‌సైట్ లింక్ అయితే (లైక్ JustWatch, MovieRules మొదలైనవి) బ్యాకెండ్ ఏపిఐ కి పంపుతాం
+   
     try {
       setError('');
-      const response = await fetch('http://localhost:5000/api/extract-video', {
+      const response = await fetch('https://watchparty-vul6.onrender.com](https://watchparty-vul6.onrender.com/api/extract-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUrl: trimmed })
@@ -58,7 +57,7 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
       const data = await response.json();
 
       if (data.success) {
-        onChangeVideo(data.videoUrl); // బ్యాకెండ్ వెతికి పట్టుకున్న అసలైన హిడెన్ వీడియో లింక్ ని ప్లేయర్ కి ఇస్తాం!
+        onChangeVideo(data.videoUrl); 
       } else {
         setError(data.message || 'No streamable video found on this page.');
       }

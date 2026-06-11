@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL || 'https://watchparty-vul6.onrender.com](https://watchparty-vul6.onrender.com';
 
 // Axios instance with auth header auto-injection
 export const api = axios.create({ baseURL: `${API}/api` });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../store';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = 'https://watchparty-vul6.onrender.com';
 
 export const useSocket = () => {
   const socketRef = useRef(null);
