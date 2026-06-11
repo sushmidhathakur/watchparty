@@ -104,14 +104,18 @@ export default function RoomHeader({
 }) {
   const [copied, setCopied] = useState(false);
 
- 
-  const currentRoomId = roomState?.inviteCode || roomState?._id || roomState?.roomId || "";
-  const finalCode = currentRoomId.length > 8 ? currentRoomId.slice(-6).toUpperCase() : currentRoomId.toUpperCase();
+  // 👑 అల్టిమేట్ ఫిక్స్ లాజిక్: 
+  // 1. ఒకవేళ రూమ్‌కి ప్రత్యేకంగా inviteCode ఉంటే (పెద్ద అక్షరాల్లో) చూపిస్తుంది.
+  // 2. ఒకవేళ అది లేకపోతే, ముక్కలు చేయకుండా పూర్తి MongoDB ఐడీని చిన్న అక్షరాల్లో (Lowercase) తీసుకుంటుంది.
+  // దీనివల్ల కేస్-సెన్సిటివిటీ సమస్య 100% పోతుంది!
+  const finalCode = roomState?.inviteCode 
+    ? roomState.inviteCode.toUpperCase() 
+    : (roomState?._id || roomState?.roomId || "").toLowerCase();
 
   const copyInvite = () => {
     if (!finalCode) return;
     
-    
+    // పక్కాగా కరెక్ట్ కోడ్ క్లిప్‌బోర్డ్‌కి కాపీ అవుతుంది
     navigator.clipboard.writeText(finalCode);
 
     setCopied(true);
@@ -168,7 +172,7 @@ export default function RoomHeader({
           CODE
         </span>
 
-        {/**/}
+        {/* ఇక్కడ ఒరిజినల్ కోడ్ లేదా కరెక్ట్ Lowercase ఐడీ పర్ఫెక్ట్‌గా కనిపిస్తుంది */}
         <span style={s.inviteCode}>
           {finalCode || '------'}
         </span>

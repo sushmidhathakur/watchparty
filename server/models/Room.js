@@ -74,12 +74,12 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/rooms/invite/:code — find by invite code (Case-Insensitive Failsafe Fixed!)
+
 router.get('/invite/:code', authMiddleware, async (req, res) => {
   try {
     const inputCodeUpper = req.params.code.toUpperCase();
     
-    /
+   
     let room = await Room.findOne({ inviteCode: inputCodeUpper, status: 'active' });
 
     
@@ -92,7 +92,7 @@ router.get('/invite/:code', authMiddleware, async (req, res) => {
     
     if (!room) return res.status(404).json({ message: 'Invalid room code mawa!' });
 
-   
+    
     const isMember = room.members.some(m => m.userId.toString() === req.user._id.toString());
     
     if (!isMember) {
