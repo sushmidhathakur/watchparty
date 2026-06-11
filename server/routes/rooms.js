@@ -1,13 +1,20 @@
 const express = require('express');
 const Room = require('../models/Room');
 const { authMiddleware } = require('../middleware/auth');
-
+const { v4: uuidv4 } = require('uuid'); // uuid library for generating unique invite codes
 const router = express.Router();
 
-// GET /api/rooms — list public rooms
+// GET /api/rooms — list rooms (Public rooms + User's own or joined private rooms)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const rooms = await Room.find({ isPublic: true, status: 'active' })
+    const rooms = await Room.find({ 
+      status: 'active',
+      $or: [
+        { isPublic: true },
+        { hostId: req.user._id },
+        { 'members.userId': req.user._id }
+      ]
+    })
       .populate('hostId', 'username avatarColor')
       .sort({ createdAt: -1 })
       .limit(20);
@@ -17,7 +24,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/rooms — create room
+// POST /api/rooms — create room (Server Error!)
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { title, isPublic, videoUrl } = req.body;
@@ -32,12 +39,16 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     }
 
+   
+    const shortInviteCode = uuidv4().split('-')[0].toUpperCase();
+
     const room = new Room({
       title,
       hostId: req.user._id,
       videoUrl: videoUrl || '',
       videoType,
-      isPublic: isPublic !== false,
+      isPublic: isPublic === true,
+      inviteCode: shortInviteCode, 
       members: [{
         userId: req.user._id,
         username: req.user.username,
@@ -49,8 +60,8 @@ router.post('/', authMiddleware, async (req, res) => {
     await room.populate('hostId', 'username avatarColor');
     res.status(201).json({ room });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Room Creation Error:', err);
+    res.status(500).json({ message: 'Server error mawa, checked logs!' });
   }
 });
 
@@ -67,14 +78,45 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/rooms/invite/:code — find by invite code
+// GET /api/rooms/invite/:code — find by invite code (Case-Insensitive Failsafe)
 router.get('/invite/:code', authMiddleware, async (req, res) => {
   try {
-    const room = await Room.findOne({ inviteCode: req.params.code, status: 'active' })
-      .populate('hostId', 'username avatarColor');
-    if (!room) return res.status(404).json({ message: 'Room not found' });
+    const inputCodeUpper = req.params.code.trim().toUpperCase();
+    
+    
+    let room = await Room.findOne({ inviteCode: inputCodeUpper, status: 'active' });
+
+   
+    if (!room) {
+      const inputCodeLower = req.params.code.trim().toLowerCase();
+      
+    
+      const activeRooms = await Room.find({ status: 'active' });
+      room = activeRooms.find(r => 
+        r._id.toString().toLowerCase() === inputCodeLower ||
+        r._id.toString().toLowerCase().endsWith(inputCodeLower)
+      );
+    }
+    
+    if (!room) return res.status(404).json({ message: 'Invalid room code mawa!' });
+
+    const isMember = room.members.some(m => m.userId.toString() === req.user._id.toString());
+    
+    if (!isMember) {
+      room.members.push({
+        userId: req.user._id,
+        username: req.user.username,
+        role: 'member'
+      });
+      await room.save();
+    }
+
+    await room.populate('hostId', 'username avatarColor');
+    await room.populate('members.userId', 'username avatarColor');
+
     res.json({ room });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -12,27 +12,23 @@ const s = {
     gap: '12px',
     flexWrap: 'wrap',
   },
-
   logo: {
     fontFamily: "'Bebas Neue', sans-serif",
     fontSize: '22px',
     color: '#E50914',
     letterSpacing: '2px',
   },
-
   title: {
     fontSize: '15px',
     fontWeight: '600',
     flex: 1,
     minWidth: 0,
   },
-
   subtitle: {
     fontSize: '12px',
     color: '#737373',
     marginTop: '2px',
   },
-
   pill: (color = 'rgba(255,255,255,0.1)') => ({
     padding: '4px 10px',
     borderRadius: '20px',
@@ -44,14 +40,12 @@ const s = {
     alignItems: 'center',
     gap: '5px',
   }),
-
   dot: (color) => ({
     width: '7px',
     height: '7px',
     borderRadius: '50%',
     background: color,
   }),
-
   btn: {
     padding: '7px 14px',
     borderRadius: '6px',
@@ -62,7 +56,6 @@ const s = {
     fontFamily: 'Inter, sans-serif',
     transition: '0.2s ease',
   },
-
   inviteBox: {
     background: '#1f1f1f',
     border: '1px solid rgba(255,255,255,0.1)',
@@ -73,7 +66,6 @@ const s = {
     gap: '8px',
     fontSize: '13px',
   },
-
   inviteCode: {
     fontFamily: 'monospace',
     fontWeight: '700',
@@ -81,7 +73,6 @@ const s = {
     letterSpacing: '1px',
     fontSize: '13px',
   },
-
   copyBtn: {
     padding: '5px 10px',
     background: 'rgba(229,9,20,0.2)',
@@ -111,93 +102,35 @@ export default function RoomHeader({
 
   const copyInvite = () => {
     if (!finalCode) return;
-    
-    // కరెక్ట్ గా ఏది స్క్రీన్ మీద ఉందో అదే క్లిప్‌బోర్డ్‌కి కాపీ అవుతుంది
     navigator.clipboard.writeText(finalCode);
-
     setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div style={s.header}>
       <div style={s.logo}>WP</div>
-
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={s.title}>
-          {roomState?.title || 'Watch Party'}
-        </div>
-
-        <div style={s.subtitle}>
-          {isHost
-            ? '👑 You are the host'
-            : '👥 Watching together'}
-        </div>
+        <div style={s.title}>{roomState?.title || 'Watch Party'}</div>
+        <div style={s.subtitle}>{isHost ? '👑 You are the host' : '👥 Watching together'}</div>
       </div>
-
-      {/* Connection Status */}
-      <div
-        style={s.pill(
-          connected
-            ? 'rgba(0,200,100,0.2)'
-            : 'rgba(255,60,60,0.2)'
-        )}
-      >
-        <div
-          style={s.dot(
-            connected ? '#00c864' : '#ff3c3c'
-          )}
-        />
+      <div style={s.pill(connected ? 'rgba(0,200,100,0.2)' : 'rgba(255,60,60,0.2)')}>
+        <div style={s.dot(connected ? '#00c864' : '#ff3c3c')} />
         {connected ? 'Connected' : 'Reconnecting...'}
       </div>
-
-      {/* Member Count */}
-      <div style={s.pill()}>
-        👥 {members.length} watching
-      </div>
-
-      {/* Room Code + Copy Code */}
+      <div style={s.pill()}>👥 {members.length} watching</div>
       <div style={s.inviteBox}>
-        <span
-          style={{
-            color: '#737373',
-            fontSize: '11px',
-          }}
-        >
-          CODE
-        </span>
-
-        {/*  */}
-        <span style={s.inviteCode}>
-          {finalCode || '------'}
-        </span>
-
-        <button
-          style={s.copyBtn}
-          onClick={copyInvite}
-        >
+        <span style={{ color: '#737373', fontSize: '11px' }}>CODE</span>
+        <span style={s.inviteCode}>{finalCode || '------'}</span>
+        <button style={s.copyBtn} onClick={copyInvite}>
           {copied ? '✓ Copied' : 'Copy Code'}
         </button>
       </div>
-
-      {/* Leave Button */}
       <button
-        style={{
-          ...s.btn,
-          background: 'rgba(255,255,255,0.08)',
-          color: '#b3b3b3',
-        }}
+        style={{ ...s.btn, background: 'rgba(255,255,255,0.08)', color: '#b3b3b3' }}
         onClick={onLeave}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.background =
-            'rgba(229,9,20,0.2)')
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.background =
-            'rgba(255,255,255,0.08)')
-        }
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(229,9,20,0.2)')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
       >
         Leave
       </button>
