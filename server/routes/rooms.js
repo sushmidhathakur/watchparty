@@ -7,7 +7,14 @@ const router = express.Router();
 // GET /api/rooms — list rooms
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const rooms = await Room.find({ status: 'active' })
+    const rooms = await Room.find({ 
+      status: 'active',
+      $or: [
+        { isPublic: true },
+        { hostId: req.user._id },
+        { 'members.userId': req.user._id }
+      ]
+    })
       .populate('hostId', 'username avatarColor')
       .sort({ createdAt: -1 })
       .limit(20);
@@ -17,12 +24,11 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/rooms — Create Room (uuid/apply )
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { title, isPublic, videoUrl } = req.body;
-    
-    // ఒకవేళ టైటిల్ రాకపోతే డమ్మీ టైటిల్ ఇస్తాం
-    const roomTitle = title || 'Watch Party Room';
+    if (!title) return res.status(400).json({ message: 'Title required' });
 
     let videoType = 'none';
     if (videoUrl) {
@@ -33,39 +39,30 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     }
 
-   
-    const shortInviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    // 💡 Mongoose 
+    const generatedCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-  
-    const roomData = {
-      title: roomTitle,
+    const room = new Room({
+      title: title,
       hostId: req.user._id,
       videoUrl: videoUrl || '',
       videoType: videoType,
       isPublic: isPublic === true,
-      inviteCode: shortInviteCode,
+      inviteCode: generatedCode, 
       status: 'active',
       members: [{
         userId: req.user._id,
-        username: req.user.username || 'Host',
+        username: req.user.username,
         role: 'host',
       }],
-    };
+    });
 
-    const room = new Room(roomData);
     await room.save();
-    
-    try {
-      await room.populate('hostId', 'username avatarColor');
-    } catch (popErr) {
-      console.log("Populate failed but room is saved", popErr);
-    }
-
+    await room.populate('hostId', 'username avatarColor');
     res.status(201).json({ room });
   } catch (err) {
     console.error('CRITICAL ROOM CREATION ERROR:', err);
-    
-    res.status(400).json({ message: 'Database save failed: ' + err.message });
+    res.status(500).json({ message: 'Database save failed: ' + err.message });
   }
 });
 
