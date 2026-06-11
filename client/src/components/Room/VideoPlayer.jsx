@@ -1,15 +1,25 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 
 export default function VideoPlayer({ roomState, isHost, playerRef, onPlay, onPause, onSeek }) {
   const isSyncing = useRef(false);
 
   useEffect(() => {
-    if (!playerRef.current || !roomState?.playbackState) return;
+    if (!roomState?.playbackState || !playerRef.current) return;
+    
     isSyncing.current = true;
     const { isPlaying, currentTime } = roomState.playbackState;
-    if (Math.abs(playerRef.current.getCurrentTime() - currentTime) > 2) playerRef.current.seekTo(currentTime);
-    isPlaying ? playerRef.current.getInternalPlayer()?.playVideo?.() : playerRef.current.getInternalPlayer()?.pauseVideo?.();
+    const player = playerRef.current.getInternalPlayer ? playerRef.current.getInternalPlayer() : playerRef.current;
+
+    if (player && typeof player.seekTo === 'function') {
+      const current = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
+      if (Math.abs(current - currentTime) > 2) player.seekTo(currentTime);
+    }
+
+    if (player) {
+      isPlaying ? player.playVideo?.() : player.pauseVideo?.();
+    }
+    
     setTimeout(() => { isSyncing.current = false; }, 1000);
   }, [roomState?.playbackState]);
 
@@ -21,8 +31,16 @@ export default function VideoPlayer({ roomState, isHost, playerRef, onPlay, onPa
       height="100%"
       controls={isHost}
       playing={roomState?.playbackState?.isPlaying}
-      onPlay={() => !isSyncing.current && onPlay(playerRef.current.getCurrentTime())}
-      onPause={() => !isSyncing.current && onPause(playerRef.current.getCurrentTime())}
+      onPlay={() => {
+        if (isSyncing.current) return;
+        const player = playerRef.current?.getInternalPlayer?.();
+        onPlay(player?.getCurrentTime ? player.getCurrentTime() : 0);
+      }}
+      onPause={() => {
+        if (isSyncing.current) return;
+        const player = playerRef.current?.getInternalPlayer?.();
+        onPause(player?.getCurrentTime ? player.getCurrentTime() : 0);
+      }}
     />
   );
 }

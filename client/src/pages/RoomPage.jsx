@@ -20,7 +20,7 @@ export default function RoomPage() {
 
   const styles = {
     page: { height: '100vh', display: 'flex', flexDirection: 'column', background: '#000', color: '#fff', overflow: 'hidden' },
-    body: { flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' },
+    body: { flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', minHeight: '0' },
     videoSection: { flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' },
     chatSection: { 
       width: '350px', background: '#111', borderLeft: '1px solid #333',
