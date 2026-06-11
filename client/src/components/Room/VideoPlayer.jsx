@@ -13,6 +13,7 @@ export default function VideoPlayer({ roomState, isHost, playerRef, onPlay, onPa
 
     if (player && typeof player.seekTo === 'function') {
       const current = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
+      // 2 seconds gap unte thappa seek cheyyadu (Glitch fix)
       if (Math.abs(current - currentTime) > 2) player.seekTo(currentTime);
     }
 
@@ -40,6 +41,10 @@ export default function VideoPlayer({ roomState, isHost, playerRef, onPlay, onPa
         if (isSyncing.current) return;
         const player = playerRef.current?.getInternalPlayer?.();
         onPause(player?.getCurrentTime ? player.getCurrentTime() : 0);
+      }}
+      onSeek={(seconds) => {
+        if (isSyncing.current) return;
+        onSeek(seconds); // Seek event kuda sync ayyela add chesa mawa
       }}
     />
   );
