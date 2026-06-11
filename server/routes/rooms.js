@@ -7,14 +7,7 @@ const router = express.Router();
 // GET /api/rooms — list rooms
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const rooms = await Room.find({ 
-      status: 'active',
-      $or: [
-        { isPublic: true },
-        { hostId: req.user._id },
-        { 'members.userId': req.user._id }
-      ]
-    })
+    const rooms = await Room.find({ status: 'active' })
       .populate('hostId', 'username avatarColor')
       .sort({ createdAt: -1 })
       .limit(20);
@@ -24,7 +17,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/rooms — Create Room (uuid/apply )
+// POST /api/rooms — Create Room
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { title, isPublic, videoUrl } = req.body;
@@ -39,7 +32,6 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     }
 
-    // 💡 Mongoose 
     const generatedCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     const room = new Room({
@@ -48,7 +40,7 @@ router.post('/', authMiddleware, async (req, res) => {
       videoUrl: videoUrl || '',
       videoType: videoType,
       isPublic: isPublic === true,
-      inviteCode: generatedCode, 
+      inviteCode: generatedCode,
       status: 'active',
       members: [{
         userId: req.user._id,
@@ -61,7 +53,7 @@ router.post('/', authMiddleware, async (req, res) => {
     await room.populate('hostId', 'username avatarColor');
     res.status(201).json({ room });
   } catch (err) {
-    console.error('CRITICAL ROOM CREATION ERROR:', err);
+    console.error('ROOM CREATION ERROR:', err);
     res.status(500).json({ message: 'Database save failed: ' + err.message });
   }
 });
@@ -79,19 +71,29 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/rooms/invite/:code — find by invite code
+// GET /api/rooms/invite/:code — 
 router.get('/invite/:code', authMiddleware, async (req, res) => {
   try {
-    const inputCodeUpper = req.params.code.trim().toUpperCase();
+    const inputCode = req.params.code.trim();
+    const inputCodeUpper = inputCode.toUpperCase();
+    const inputCodeLower = inputCode.toLowerCase();
+
+    
     let room = await Room.findOne({ inviteCode: inputCodeUpper, status: 'active' });
 
+   
     if (!room) {
-      const inputCodeLower = req.params.code.trim().toLowerCase();
       const activeRooms = await Room.find({ status: 'active' });
-      room = activeRooms.find(r => 
-        r._id.toString().toLowerCase() === inputCodeLower ||
-        r._id.toString().toLowerCase().endsWith(inputCodeLower)
-      );
+      
+      room = activeRooms.find(r => {
+        const roomIdStr = r._id.toString().toLowerCase();
+        
+        return (
+          roomIdStr === inputCodeLower ||               
+          roomIdStr.startsWith(inputCodeLower) ||         
+          roomIdStr.endsWith(inputCodeLower)             
+        );
+      });
     }
     
     if (!room) return res.status(404).json({ message: 'Invalid room code mawa!' });
@@ -111,6 +113,7 @@ router.get('/invite/:code', authMiddleware, async (req, res) => {
 
     res.json({ room });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
