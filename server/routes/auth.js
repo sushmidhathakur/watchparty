@@ -39,12 +39,21 @@ router.post('/register', async (req, res) => {
 
     const avatarColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
     const user = new User({ username, email, passwordHash: password, avatarColor });
+    
+
     await user.save();
 
-    const token = generateToken(user._id);
-    res.status(201).json({ token, user: user.toSafeObject() });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Registration successful mawa! Please login.' 
+    });
   } catch (err) {
     console.error(err);
+    
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });

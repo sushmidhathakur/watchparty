@@ -22,9 +22,10 @@ const roomSchema = new mongoose.Schema({
     enum: ['youtube', 'direct', 'none'],
     default: 'none',
   },
+  
   isPublic: {
     type: Boolean,
-    default: true,
+    default: false, 
   },
   inviteCode: {
     type: String,
