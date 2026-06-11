@@ -16,10 +16,14 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) { setError('Please enter a URL'); return; }
+    
+    // Youtube or .mp4 check
     if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
       onChangeVideo(trimmed);
       return;
     }
+    
+    // API Call for other sites
     try {
       const response = await fetch('https://watchparty-vul6.onrender.com/api/extract-video', {
         method: 'POST',
@@ -35,10 +39,27 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
     <form onSubmit={handleSubmit}>
       <div style={s.bar}>
         <span style={s.label}>🎥 URL</span>
-        <input style={s.input} placeholder="Paste link..." value={url} onChange={e => setUrl(e.target.value)} />
-        <label style={s.uploadBtn}>📁 Upload <input type="file" accept="video/*" onChange={e => e.target.files[0] && onChangeVideo(URL.createObjectURL(e.target.files[0]))} style={{ display: 'none' }} /></label>
+        <input 
+          style={s.input} 
+          placeholder="Paste link..." 
+          value={url} 
+          onChange={e => { setUrl(e.target.value); setError(''); }} 
+        />
+        
+        <label style={s.uploadBtn}>
+          📁 Upload 
+          <input 
+            type="file" 
+            accept="video/*" 
+            onChange={e => e.target.files[0] && onChangeVideo(URL.createObjectURL(e.target.files[0]))} 
+            style={{ display: 'none' }} 
+          />
+        </label>
+        
+        {/* Play for all button - Form submit avutundi, so functionality work avtundi */}
         <button type="submit" style={s.btn}>Play for all</button>
       </div>
+      
       {error && <div style={{ padding: '5px 15px', color: '#ff6b6b', fontSize: '12px' }}>{error}</div>}
     </form>
   );
