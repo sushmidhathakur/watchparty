@@ -104,10 +104,15 @@ export default function RoomHeader({
 }) {
   const [copied, setCopied] = useState(false);
 
+ 
+  const currentRoomId = roomState?.inviteCode || roomState?._id || roomState?.roomId || "";
+  const finalCode = currentRoomId.length > 8 ? currentRoomId.slice(-6).toUpperCase() : currentRoomId.toUpperCase();
+
   const copyInvite = () => {
-   
-    const codeToCopy = roomState?.inviteCode || '';
-    navigator.clipboard.writeText(codeToCopy);
+    if (!finalCode) return;
+    
+    
+    navigator.clipboard.writeText(finalCode);
 
     setCopied(true);
     setTimeout(() => {
@@ -163,9 +168,9 @@ export default function RoomHeader({
           CODE
         </span>
 
-        {/* */}
+        {/**/}
         <span style={s.inviteCode}>
-          {roomState?.inviteCode || '------'}
+          {finalCode || '------'}
         </span>
 
         <button
