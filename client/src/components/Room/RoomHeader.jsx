@@ -105,14 +105,11 @@ export default function RoomHeader({
   const [copied, setCopied] = useState(false);
 
   const copyInvite = () => {
-    const roomLink = `${window.location.origin}/room/${
-      roomState?._id || roomState?.roomId
-    }`;
-
-    navigator.clipboard.writeText(roomLink);
+   
+    const codeToCopy = roomState?.inviteCode || '';
+    navigator.clipboard.writeText(codeToCopy);
 
     setCopied(true);
-
     setTimeout(() => {
       setCopied(false);
     }, 2000);
@@ -155,7 +152,7 @@ export default function RoomHeader({
         👥 {members.length} watching
       </div>
 
-      {/* Room Code + Copy Link */}
+      {/* Room Code + Copy Code */}
       <div style={s.inviteBox}>
         <span
           style={{
@@ -163,24 +160,19 @@ export default function RoomHeader({
             fontSize: '11px',
           }}
         >
-          ROOM
+          CODE
         </span>
 
+        {/* */}
         <span style={s.inviteCode}>
-          {(
-            roomState?._id ||
-            roomState?.roomId ||
-            ''
-          )
-            .slice(-6)
-            .toUpperCase()}
+          {roomState?.inviteCode || '------'}
         </span>
 
         <button
           style={s.copyBtn}
           onClick={copyInvite}
         >
-          {copied ? '✓ Copied' : 'Copy Link'}
+          {copied ? '✓ Copied' : 'Copy Code'}
         </button>
       </div>
 
