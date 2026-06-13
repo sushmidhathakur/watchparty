@@ -1,43 +1,89 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store';
-import { useSocket } from '../hooks/useSocket';
-import { useRoom } from '../hooks/useRoom';
-import VideoPlayer from '../components/Room/VideoPlayer';
-import ChatPanel from '../components/Chat/ChatPanel';
-import MemberList from '../components/Room/MemberList';
-import VideoUrlInput from '../components/Room/VideoUrlInput';
-import RoomHeader from '../components/Room/RoomHeader';
 
-export default function RoomPage() {
-  const { roomId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { socket } = useSocket();
-  const [showChat, setShowChat] = useState(false);
-  const [isFull, setIsFull] = useState(false);
-  const { roomState, members, messages, isHost, playerRef, syncPlay, syncPause, syncSeek, changeVideo, sendMessage } = useRoom(roomId, socket);
+const s = {
+  bar: { display: 'flex', gap: '8px', padding: '12px 16px', background: '#1a1a1a', borderTop: '1px solid rgba(255,255,255,0.06)', alignItems: 'center', flexShrink: 0 },
+  label: { fontSize: '12px', color: '#737373', whiteSpace: 'nowrap', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' },
+  input: { flex: 1, background: '#242424', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '9px 14px', fontSize: '13px', color: '#fff', outline: 'none' },
+  uploadBtn: { padding: '9px 14px', background: '#242424', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
+  btn: { padding: '9px 18px', background: '#E50914', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+};
+
+export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
+  const [url, setUrl] = useState(currentUrl || '');
+  const [error, setError] = useState('');
+
+  // 1. Play for all 
+  const handlePlayClick = async () => {
+    const trimmed = url.trim();
+    if (!trimmed) { setError('Please enter a valid URL'); return; }
+
+    console.log("Play for all clicked! URL:", trimmed);
+
+    // YouTube 
+    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4') || trimmed.endsWith('.mkv')) {
+      setError('');
+      onChangeVideo(trimmed);
+      return;
+    }
+
+    
+    try {
+      const response = await fetch('https://watchparty-vul6.onrender.com/api/extract-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUrl: trimmed })
+      });
+      const data = await response.json();
+      if (data.success) { 
+        setError('');
+        onChangeVideo(data.videoUrl); 
+      } else { 
+        setError(data.message || 'Error extracting video'); 
+      }
+    } catch (err) { 
+      setError('Failed to extract. Try a direct YouTube or MP4 link.'); 
+    }
+  };
+
+  // 2. Upload లాజిక్
+  const handleLocalFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setError('');
+      const blobUrl = URL.createObjectURL(file);
+      onChangeVideo(blobUrl); 
+    }
+  };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000', color: '#fff', overflow: 'hidden' }}>
-      <RoomHeader roomState={roomState} members={members} onLeave={() => navigate('/')} />
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <VideoPlayer playerRef={playerRef} roomState={roomState} isHost={isHost} onPlay={syncPlay} onPause={syncPause} onSeek={syncSeek} />
-            <button onClick={() => setIsFull(!isFull)} style={{ position: 'absolute', bottom: 20, right: 20, background: 'rgba(0,0,0,0.7)', padding: '8px 15px', zIndex: 10 }}>{isFull ? 'Exit Fullscreen' : 'Fullscreen'}</button>
-          </div>
-          {isHost && <VideoUrlInput currentUrl={roomState?.videoUrl} onChangeVideo={changeVideo} />}
-        </div>
-        {!isFull && (
-          <div style={{ width: window.innerWidth < 768 ? '100%' : '350px', display: showChat || window.innerWidth >= 768 ? 'flex' : 'none', flexDirection: 'column', position: window.innerWidth < 768 ? 'fixed' : 'relative', zIndex: 1001, background: '#111' }}>
-            <button onClick={() => setShowChat(false)} style={{ padding: '15px', background: 'none', border: 'none', color: '#fff' }}>← Back to Video</button>
-            <div style={{ flex: 1, overflowY: 'auto' }}><MemberList members={members} /></div>
-            <div style={{ flex: 2 }}><ChatPanel messages={messages} currentUser={user} onSend={sendMessage} /></div>
-          </div>
-        )}
+    <div style={{ width: '100%' }}>
+      <div style={s.bar}>
+        <span style={s.label}>🎥 URL</span>
+        
+        <input 
+          style={s.input} 
+          placeholder="Paste YouTube or any Direct Link..." 
+          value={url} 
+          onChange={e => { setUrl(e.target.value); setError(''); }} 
+        />
+        
+        <label style={s.uploadBtn}>
+          📁 Upload
+          <input 
+            type="file" 
+            accept="video/*" 
+            onChange={handleLocalFileChange} 
+            style={{ display: 'none' }} 
+          />
+        </label>
+        
+        {/* */}
+        <button onClick={handlePlayClick} style={s.btn}>
+          Play for all
+        </button>
       </div>
-      {window.innerWidth < 768 && !showChat && !isFull && <button onClick={() => setShowChat(true)} style={{ position: 'absolute', bottom: 20, right: 20, padding: '15px', background: '#e50914', borderRadius: '50%' }}>Chat</button>}
+      
+      {error && <div style={{ padding: '5px 16px', color: '#ff6b6b', fontSize: '12px', background: '#1a1a1a' }}>{error}</div>}
     </div>
   );
 }
