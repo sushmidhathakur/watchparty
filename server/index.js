@@ -1,6 +1,6 @@
-
 const dns = require('node:dns');
-dns.setServers(['8.8.8.8', '1.1.1.1']); const express = require('express');
+dns.setServers(['8.8.8.8', '1.1.1.1']); 
+const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -14,26 +14,27 @@ console.log("JWT_SECRET =", process.env.JWT_SECRET);
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const messageRoutes = require('./routes/messages');
-
 const videoExtractorRouter = require('./routes/videoExtractor');
-
 const { initSocketHandlers } = require('./socket/handlers');
 
 const app = express();
 const httpServer = http.createServer(app);
 
-// Socket.io setup
+// Allowed origins array
+const allowedOrigins = ['https://watchparty-client.vercel.app', 'http://localhost:5173'];
+
+// Socket.io setup with explicit Vercel CORS policy
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
-// Middleware
+// Middleware with explicit Vercel CORS policy
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -45,18 +46,14 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
-
-
 app.use('/api', videoExtractorRouter); 
 
 // Socket.io handlers
 initSocketHandlers(io);
 
-
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/watchparty')
   .then(() => {
-  
     console.log('✅ MongoDB connected');
     const PORT = process.env.PORT || 5000;
     httpServer.listen(PORT, () => {
