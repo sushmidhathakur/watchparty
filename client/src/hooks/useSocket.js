@@ -8,60 +8,46 @@ export const useSocket = () => {
   const socketRef = useRef(null);
   const { token, user } = useAuthStore();
   const [connected, setConnected] = useState(false);
-  // సాకెట్ ని రియాక్ట్ స్టేట్ లో పెడుతున్నాం, అప్పుడే RoomPage కి అప్డేట్ వెళ్తుంది
-  const [socketInstance, setSocketInstance] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
+   
+    if (!user || !token) {
+      console.log("No user or token found, skipping socket connection.");
+      return;
+    }
 
     const socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'], 
+      reconnection: true,       
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      reconnectionDelay: 2000,
     });
 
     socket.on('connect', () => {
       console.log('✅ Socket connected:', socket.id);
       setConnected(true);
-      setSocketInstance(socket); // స్టేట్ అప్డేట్ చేసాం
     });
 
-    socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log('❌ Socket disconnected:', reason);
       setConnected(false);
-      setSocketInstance(null);
     });
 
-    socket.on('error', (err) => {
-      console.error('Socket error:', err);
+   
+    socket.on('connect_error', (err) => {
+      console.error('Socket Connection Error:', err.message);
+      
     });
 
     socketRef.current = socket;
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
-      setConnected(false);
-      setSocketInstance(null);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
-  }, [user, token]);
-
-  const emit = useCallback((event, data) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit(event, data);
-    }
-  }, []);
-
-  const on = useCallback((event, handler) => {
-    socketRef.current?.on(event, handler);
-    return () => socketRef.current?.off(event, handler);
-  }, []);
-
-  const off = useCallback((event, handler) => {
-    socketRef.current?.off(event, handler);
-  }, []);
-
-  // ఇక్కడ socketRef.current బదులు socketInstance ని పంపుతున్నాం
-  return { socket: socketInstance, connected, emit, on, off };
+  }, [user, token]); 
+  
+  return { socket: socketRef.current, connected, emit, on, off };
 };
