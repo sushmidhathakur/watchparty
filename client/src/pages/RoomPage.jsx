@@ -4,7 +4,7 @@ import { useAuthStore } from '../store';
 import { useSocket } from '../hooks/useSocket';
 import { useRoom } from '../hooks/useRoom';
 import VideoPlayer from '../components/Room/VideoPlayer';
-import ChatPanel from '../components/Chat/ChatPanel';
+import ChatPanel from '../components/Room/ChatPanel';
 import MemberList from '../components/Room/MemberList';
 import VideoUrlInput from '../components/Room/VideoUrlInput';
 import RoomHeader from '../components/Room/RoomHeader';
