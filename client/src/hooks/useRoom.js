@@ -22,6 +22,10 @@ export const useRoom = (roomId, socket) => {
   useEffect(() => {
     if (!socket || !roomId) return;
 
+    // Guard to prevent local player events from echoing back to the server
+    // when we are applying a remote sync command
+    const isSyncing = { current: false };
+
     // Join the room
     socket.emit('room:join', {
       roomId,
@@ -37,24 +41,59 @@ export const useRoom = (roomId, socket) => {
       'room:users': ({ users }) => setMembers(users),
 
       // ── Video sync handlers ──────────────────────────────────────────────
-      'video:play': ({ currentTime, clientTimestamp, serverTimestamp }) => {
+      'video:play': ({ currentTime, serverTimestamp }) => {
         if (!playerRef.current) return;
-        // Latency correction: add time elapsed since event was sent
-        const latency = (Date.now() - serverTimestamp) / 1000;
+        isSyncing.current = true;
+        // Latency correction: add time elapsed since server sent the event
+        const latency = serverTimestamp ? (Date.now() - serverTimestamp) / 1000 : 0;
         const correctedTime = currentTime + latency;
-        playerRef.current.seekTo(correctedTime, true);
-        playerRef.current.playVideo();
+        try {
+          const player = playerRef.current.getInternalPlayer?.() || playerRef.current;
+          if (player?.seekTo) player.seekTo(correctedTime, true);
+          else if (player?.currentTime !== undefined) player.currentTime = correctedTime;
+          player?.playVideo?.();
+        } catch (e) { /* ignore player errors during sync */ }
+        // Update local roomState so ReactPlayer's `playing` prop becomes true
+        setRoomState(prev => prev
+          ? { ...prev, playbackState: { ...prev.playbackState, isPlaying: true, currentTime: correctedTime } }
+          : prev
+        );
+        setTimeout(() => { isSyncing.current = false; }, 1000);
       },
-      'video:pause': ({ currentTime }) => {
+
+      'video:pause': ({ currentTime, serverTimestamp }) => {
         if (!playerRef.current) return;
-        playerRef.current.seekTo(currentTime, true);
-        playerRef.current.pauseVideo();
+        isSyncing.current = true;
+        try {
+          const player = playerRef.current.getInternalPlayer?.() || playerRef.current;
+          if (player?.seekTo) player.seekTo(currentTime, true);
+          else if (player?.currentTime !== undefined) player.currentTime = currentTime;
+          player?.pauseVideo?.();
+        } catch (e) { /* ignore */ }
+        setRoomState(prev => prev
+          ? { ...prev, playbackState: { ...prev.playbackState, isPlaying: false, currentTime } }
+          : prev
+        );
+        setTimeout(() => { isSyncing.current = false; }, 1000);
       },
+
       'video:seek': ({ currentTime, serverTimestamp }) => {
         if (!playerRef.current) return;
-        const latency = (Date.now() - serverTimestamp) / 1000;
-        playerRef.current.seekTo(currentTime + latency, true);
+        isSyncing.current = true;
+        const latency = serverTimestamp ? (Date.now() - serverTimestamp) / 1000 : 0;
+        const correctedTime = currentTime + latency;
+        try {
+          const player = playerRef.current.getInternalPlayer?.() || playerRef.current;
+          if (player?.seekTo) player.seekTo(correctedTime, true);
+          else if (player?.currentTime !== undefined) player.currentTime = correctedTime;
+        } catch (e) { /* ignore */ }
+        setRoomState(prev => prev
+          ? { ...prev, playbackState: { ...prev.playbackState, currentTime: correctedTime } }
+          : prev
+        );
+        setTimeout(() => { isSyncing.current = false; }, 500);
       },
+
       'video:change': ({ videoUrl, videoType }) => {
         setRoomState(prev => prev ? { ...prev, videoUrl, videoType } : prev);
       },
@@ -80,6 +119,7 @@ export const useRoom = (roomId, socket) => {
       socket.emit('room:leave', { roomId });
     };
   }, [socket, roomId, user]);
+
 
   // ── Sync actions (called from VideoPlayer) ───────────────────────────────
   const syncPlay = useCallback((currentTime) => {

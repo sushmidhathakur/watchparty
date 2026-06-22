@@ -11,6 +11,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor — handle expired/invalid JWT gracefully
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || '';
+    if (
+      status === 401 &&
+      (message.toLowerCase().includes('expired') ||
+        message.toLowerCase().includes('invalid token') ||
+        message.toLowerCase().includes('no token'))
+    ) {
+      console.warn('JWT expired or invalid — logging out and redirecting.');
+      useAuthStore.getState().logout();
+      // Redirect to auth page without crashing the UI
+      window.location.href = '/auth';
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 // ── Auth Store ──────────────────────────────────────────────────────────────
 export const useAuthStore = create(
   persist(

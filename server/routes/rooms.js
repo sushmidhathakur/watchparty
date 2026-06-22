@@ -71,39 +71,33 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/rooms/invite/:code — 
+// GET /api/rooms/invite/:code — Case-insensitive lookup, supports full ObjectId or invite code
 router.get('/invite/:code', authMiddleware, async (req, res) => {
   try {
     const inputCode = req.params.code.trim();
-    const inputCodeUpper = inputCode.toUpperCase();
-    const inputCodeLower = inputCode.toLowerCase();
+    let room = null;
 
-    
-    let room = await Room.findOne({ inviteCode: inputCodeUpper, status: 'active' });
+    // 1. Try direct ObjectId lookup (if the user pasted the full room URL/ID)
+    if (/^[a-fA-F0-9]{24}$/.test(inputCode)) {
+      room = await Room.findOne({ _id: inputCode, status: 'active' });
+    }
 
-   
+    // 2. Case-insensitive regex match on inviteCode field
     if (!room) {
-      const activeRooms = await Room.find({ status: 'active' });
-      
-      room = activeRooms.find(r => {
-        const roomIdStr = r._id.toString().toLowerCase();
-        
-        return (
-          roomIdStr === inputCodeLower ||               
-          roomIdStr.startsWith(inputCodeLower) ||         
-          roomIdStr.endsWith(inputCodeLower)             
-        );
+      room = await Room.findOne({
+        inviteCode: { $regex: new RegExp(`^${inputCode}$`, 'i') },
+        status: 'active',
       });
     }
-    
-    if (!room) return res.status(404).json({ message: 'Invalid room code mawa!' });
+
+    if (!room) return res.status(404).json({ message: 'Invalid room code. Please check and try again.' });
 
     const isMember = room.members.some(m => m.userId.toString() === req.user._id.toString());
     if (!isMember) {
       room.members.push({
         userId: req.user._id,
         username: req.user.username,
-        role: 'member'
+        role: 'member',
       });
       await room.save();
     }
@@ -117,6 +111,7 @@ router.get('/invite/:code', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // PATCH /api/rooms/:id/video
 router.patch('/:id/video', authMiddleware, async (req, res) => {

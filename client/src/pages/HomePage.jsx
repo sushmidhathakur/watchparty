@@ -116,7 +116,14 @@ export default function HomePage() {
     if (!inviteCode.trim()) return;
     setJoining(true);
     setInviteError('');
-    const result = await findByInviteCode(inviteCode.trim().toUpperCase());
+
+    // Extract code/ID from pasted room URLs like "/room/abc123" or full URLs
+    let cleanCode = inviteCode.trim();
+    const roomUrlMatch = cleanCode.match(/\/room\/([a-zA-Z0-9]+)/);
+    if (roomUrlMatch) cleanCode = roomUrlMatch[1];
+
+    // Pass the code as-is (backend handles case-insensitive + ObjectId matching)
+    const result = await findByInviteCode(cleanCode);
     setJoining(false);
     if (result.success) {
       navigate(`/room/${result.room._id}`);
@@ -186,11 +193,10 @@ export default function HomePage() {
           </span>
           <input
             style={s.inviteInput}
-            placeholder="Enter code e.g. A3F9B2"
+            placeholder="Enter code or paste room link"
             value={inviteCode}
-            onChange={e => { setInviteCode(e.target.value.toUpperCase()); setInviteError(''); }}
+            onChange={e => { setInviteCode(e.target.value); setInviteError(''); }}
             onKeyDown={e => e.key === 'Enter' && joinByCode()}
-            maxLength={8}
           />
           <button style={{ ...s.btnPrimary, padding: '12px 24px' }} onClick={joinByCode} disabled={joining}>
             {joining ? '...' : 'Join'}

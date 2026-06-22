@@ -25,11 +25,13 @@ const connectedUsers = new Map();
 
 const verifySocketToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    // Use same secret as routes/auth.js — env variable with hardcoded fallback
+    return jwt.verify(token, process.env.JWT_SECRET || 'watchparty_secret_2026');
   } catch {
     return null;
   }
 };
+
 const deleteRoomIfEmpty = async (roomId) => {
   try {
     const roomUsers = [];
