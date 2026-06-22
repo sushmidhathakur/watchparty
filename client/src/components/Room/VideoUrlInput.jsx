@@ -16,13 +16,14 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) { setError('Please enter a URL'); return; }
-
-    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4') || trimmed.endsWith('.mkv')) {
-      setError('');
+    
+    // Youtube or .mp4 check
+    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
       onChangeVideo(trimmed);
       return;
     }
-
+    
+    // API Call for other sites
     try {
       const response = await fetch('https://watchparty-vul6.onrender.com/api/extract-video', {
         method: 'POST',
@@ -30,24 +31,9 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
         body: JSON.stringify({ targetUrl: trimmed })
       });
       const data = await response.json();
-      if (data.success) { 
-        setError('');
-        onChangeVideo(data.videoUrl); 
-      } else { 
-        setError(data.message || 'Error'); 
-      }
-    } catch (err) { 
-      setError('Failed to extract.'); 
-    }
-  };
-
-  const handleLocalFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setError('');
-      const blobUrl = URL.createObjectURL(file);
-      onChangeVideo(blobUrl); 
-    }
+      if (data.success) { onChangeVideo(data.videoUrl); } else { setError(data.message || 'Error'); }
+    } catch (err) { setError('Failed to extract.'); }
+    onChangeVideo(trimmed);
   };
 
   return (
@@ -60,17 +46,19 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
           value={url} 
           onChange={e => { setUrl(e.target.value); setError(''); }} 
         />
+        
         <label style={s.uploadBtn}>
           📁 Upload 
           <input 
             type="file" 
             accept="video/*" 
-            onChange={handleLocalFileChange} 
+            onChange={e => e.target.files[0] && onChangeVideo(URL.createObjectURL(e.target.files[0]))} 
             style={{ display: 'none' }} 
           />
         </label>
         <button type="submit" style={s.btn}>Play for all</button>
       </div>
+      
       {error && <div style={{ padding: '5px 15px', color: '#ff6b6b', fontSize: '12px' }}>{error}</div>}
     </form>
   );
