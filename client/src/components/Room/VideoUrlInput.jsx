@@ -16,13 +16,16 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) { setError('Please enter a URL'); return; }
-    if (trimmed === currentUrl) { setError('Already playing this video'); return; }
-      let finalUrl = trimmed;
-      return;
+    
+    setError(''); 
+
+   
+    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
+      onChangeVideo(trimmed);
+      return; 
     }
     
-    // API Call for other sites
-        if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
+    
     try {
       const response = await fetch('https://watchparty-vul6.onrender.com/api/extract-video', {
         method: 'POST',
@@ -30,14 +33,15 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
         body: JSON.stringify({ targetUrl: trimmed })
       });
       const data = await response.json();
+      
       if (data.success) { 
-        finalUrl = data.videoUrl; 
+        onChangeVideo(data.videoUrl); 
       } else { 
-        setError(data.message || 'Error'); 
-        return;
+        setError(data.message || 'Error extracting video'); 
       }
-    } catch (err) { setError('Failed to extract.'); }
-    onChangeVideo(finalUrl);
+    } catch (err) { 
+      setError('Failed to extract video.'); 
+    }
   };
 
   return (
@@ -56,13 +60,17 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
           <input 
             type="file" 
             accept="video/*" 
-            onChange={e => e.target.files[0] && onChangeVideo(URL.createObjectURL(e.target.files[0]))} 
+            onChange={e => {
+              if (e.target.files && e.target.files[0]) {
+                onChangeVideo(URL.createObjectURL(e.target.files[0]));
+              }
+            }} 
             style={{ display: 'none' }} 
           />
         </label>
+        
         <button type="submit" style={s.btn}>Play for all</button>
       </div>
-      
       {error && <div style={{ padding: '5px 15px', color: '#ff6b6b', fontSize: '12px' }}>{error}</div>}
     </form>
   );
