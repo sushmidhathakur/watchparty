@@ -16,14 +16,13 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) { setError('Please enter a URL'); return; }
-    
-    // Youtube or .mp4 check
-    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
-      onChangeVideo(trimmed);
+    if (trimmed === currentUrl) { setError('Already playing this video'); return; }
+      let finalUrl = trimmed;
       return;
     }
     
     // API Call for other sites
+        if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be') || trimmed.endsWith('.mp4')) {
     try {
       const response = await fetch('https://watchparty-vul6.onrender.com/api/extract-video', {
         method: 'POST',
@@ -31,9 +30,14 @@ export default function VideoUrlInput({ currentUrl, onChangeVideo }) {
         body: JSON.stringify({ targetUrl: trimmed })
       });
       const data = await response.json();
-      if (data.success) { onChangeVideo(data.videoUrl); } else { setError(data.message || 'Error'); }
+      if (data.success) { 
+        finalUrl = data.videoUrl; 
+      } else { 
+        setError(data.message || 'Error'); 
+        return;
+      }
     } catch (err) { setError('Failed to extract.'); }
-    onChangeVideo(trimmed);
+    onChangeVideo(finalUrl);
   };
 
   return (
